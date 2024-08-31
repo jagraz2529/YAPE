@@ -1,0 +1,84 @@
+version: '3.9'
+
+services:
+  database:
+    image: postgres:latest
+    container_name: postgres-db-yape
+    restart: always
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - "./database-postgres:/var/lib/data/postgres"
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper-${JOB_BASE_NAME}
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "${ZOOKEEPER_PORT}:${ZOOKEEPER_PORT}"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka-${JOB_BASE_NAME}
+    depends_on:
+      - zookeeper
+    ports:
+      - "${KAFKA_PORT}:${KAFKA_PORT}"
+    hostname: kafka
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_INTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kafka_ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka_ui-${JOB_BASE_NAME}
+    depends_on:
+      - kafka
+    ports:
+      - "${KAFKA_UI_PORT}:${KAFKA_UI_PORT}"
+    environment:
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+  api-server:
+    build:
+      context: ./projects/yape-server
+      dockerfile: Dockerfile
+    env_file: .env
+    container_name: ${PROJECT_NAME_SERVER}-${JOB_BASE_NAME}
+    image: server/${PROJECT_NAME_SERVER}
+    ports:
+      - "${PORT_LOCAL_SERVER}:${PORT_LOCAL_SERVER}"
+    volumes:
+      - ./projects/yape-server/:/app
+      - /app/node_modules
+      - /app/src/auths/certs
+    depends_on:
+      - database
+      - kafka
+
+  micro-server:
+    build:
+      context: ./projects/yape-micro-server
+      dockerfile: Dockerfile
+    env_file: .env
+    container_name: ${PROJECT_NAME_MICRO_SERVER}-${JOB_BASE_NAME}
+    image: server/${PROJECT_NAME_MICRO_SERVER}
+    ports:
+      - "${PORT_LOCAL_MICRO}:${PORT_LOCAL_MICRO}"
+    volumes:
+      - ./projects/yape-micro-server/:/app
+      - /app/node_modules
+    depends_on:
+      - api-server
+      - kafka

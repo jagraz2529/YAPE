@@ -1,0 +1,13 @@
+database-postgres/
+projects/yape-server/dist/
+projects/yape-server/node_modules/
+projects/yape-server/src/auths/certs
+projects/yape-server/src/database/migrations
+projects/yape-micro-server/dist/
+projects/yape-micro-server/node_modules/
+.idea/
+projects/yape-server/.env
+projects/yape-server/yarn.lock
+projects/yape-micro-server/.env
+projects/yape-micro-server/yarn.lock
+.env
