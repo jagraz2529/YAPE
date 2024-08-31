@@ -1,7 +1,8 @@
 database-postgres/
 projects/yape-server/dist/
 projects/yape-server/node_modules/
-projects/yape-server/src/auths/certs
+projects/yape-server/src/auths/certs/jwt-private.key
+projects/yape-server/src/auths/certs/jwt-public.key
 projects/yape-server/src/database/migrations
 projects/yape-micro-server/dist/
 projects/yape-micro-server/node_modules/
